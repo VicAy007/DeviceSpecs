@@ -25,8 +25,28 @@ class AppColors {
   static const Color textSecondary = Color(0xFFC8C6C5);
 
   // États
-  static const Color error = Color(0xFFFFB4AB);
+  //static const Color error = Color(0xFFFFB4AB);
   // Le design mock est strictement monochrome : "Healthy" / "Connected"
   // sont représentés en blanc, pas en vert.
-  static const Color success = Color(0xFFFFFFFF);
+  //static const Color success = Color(0xFFFFFFFF);
+
+  //------------
+    static const primary = Color(0xFF3D5AFE);
+  static const secondary = Color(0xFF00BFA5);
+
+  static const backgroundLight = Color(0xFFF7F8FA);
+  static const backgroundDark = Color(0xFF0F1115);
+
+  static const surfaceLight = Color(0xFFFFFFFF);
+  static const surfaceDark = Color(0xFF1A1D24);
+
+  static const textPrimaryLight = Color(0xFF14151A);
+  static const textPrimaryDark = Color(0xFFF2F3F5);
+
+  static const textSecondaryLight = Color(0xFF6B7280);
+  static const textSecondaryDark = Color(0xFF9AA0AC);
+
+  static const success = Color(0xFF2ECC71);
+  static const warning = Color(0xFFF5A623);
+  static const error = Color(0xFFE74C3C);
 }

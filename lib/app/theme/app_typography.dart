@@ -14,6 +14,13 @@ class AppTypography {
 
   static const String _dataFontFamily = 'monospace';
 
+  static const display = TextStyle(fontSize: 28, fontWeight: FontWeight.w700, height: 1.2);
+  static const headline = TextStyle(fontSize: 22, fontWeight: FontWeight.w700, height: 1.25);
+  static const title = TextStyle(fontSize: 17, fontWeight: FontWeight.w600, height: 1.3);
+  static const body = TextStyle(fontSize: 14, fontWeight: FontWeight.w400, height: 1.4);
+  static const label = TextStyle(fontSize: 13, fontWeight: FontWeight.w500, height: 1.3);
+  static const caption = TextStyle(fontSize: 11, fontWeight: FontWeight.w400, height: 1.3);
+
   static const TextStyle headlineMd = TextStyle(
     fontSize: 16,
     height: 1.5,

@@ -1,73 +1,121 @@
 import '../../domain/entities/device_health.dart';
 import '../../domain/repositories/dashboard_repository.dart';
+import '../../../system_info/domain/repositories/system_info_repository.dart';
+import '../../../system_info/domain/entities/battery_info.dart';
 
-/// Implémentation mock de [DashboardRepository], alignée sur la maquette
-/// `dashboard_system_health_dark_minimal.html`.
-///
-/// TODO(equipe): remplacer par une implémentation qui interroge les
-/// services natifs (Kotlin/Swift/etc. — voir `lib/services/native/` dans
-/// l'architecture cible du README) une fois l'intégration native prête.
-/// Le ViewModel n'a pas à changer : il ne dépend que de
-/// [DashboardRepository].
-class MockDashboardRepository implements DashboardRepository {
+/// Real Dashboard repository. It reuses the existing system_info repository
+/// instead of collecting or inventing system data a second time.
+class DashboardRepositoryImpl implements DashboardRepository {
+  DashboardRepositoryImpl({required SystemInfoRepository systemInfoRepository})
+      : _systemInfoRepository = systemInfoRepository;
+
+  final SystemInfoRepository _systemInfoRepository;
+
   @override
   Future<DeviceHealth> getDeviceHealth() async {
-    // Simule une latence d'acquisition, comme un vrai appel natif.
-    await Future.delayed(const Duration(milliseconds: 300));
+    final results = await Future.wait([
+      _systemInfoRepository.getDeviceInfo(),
+      _systemInfoRepository.getCpuInfo(),
+      _systemInfoRepository.getMemoryInfo(),
+      _systemInfoRepository.getStorageInfo(),
+      _systemInfoRepository.getBatteryInfo(),
+      _systemInfoRepository.getNetworkInfo(),
+    ]);
 
-    return const DeviceHealth(
-      deviceId: 'G1AZG',
-      deviceName: 'Pixel 8 Pro',
-      osVersion: 'Android 14',
-      chipset: 'Tensor G3',
-      buildNumber: 'UQ1A.240205.004',
-      healthPercent: 98,
-      batteryPercent: 84,
-      batteryTempCelsius: 34,
-      chargeState: 'Fast Flow',
-      cellHealth: 'Nominal',
-      chargerLabel: 'USB-PD 27W',
-      ramPercent: 68,
-      ramUsedGb: 8.1,
-      ramTotalGb: 12,
-      ramFreeGb: 3.9,
-      ramType: 'LPDDR5X',
-      activeHeapGb: 8.1,
-      zramSwapGb: 2.1,
-      storagePercent: 50,
-      storageUsedGb: 128,
-      storageTotalGb: 256,
-      storageFreeGb: 128,
-      storageBus: 'UFS 4.0 Storage Bus',
-      cpuName: 'Tensor G3 Frequency Map',
-      cpuCoreLayout: '9 Cores (1x X3 • 4x A715 • 4x A510)',
-      cpuLoadPercent: 24,
-      cpuFreqPrimeGhz: 2.91,
-      cpuFreqPerformanceGhz: 2.37,
-      cpuFreqEfficiencyGhz: 1.70,
-      cpuLoadHistory: [
-        ChartPoint(0.00, 0.92),
-        ChartPoint(0.08, 0.80),
-        ChartPoint(0.17, 0.87),
-        ChartPoint(0.25, 0.53),
-        ChartPoint(0.33, 0.73),
-        ChartPoint(0.42, 0.37),
-        ChartPoint(0.50, 0.63),
-        ChartPoint(0.58, 0.30),
-        ChartPoint(0.67, 0.47),
-        ChartPoint(0.75, 0.20),
-        ChartPoint(0.83, 0.43),
-        ChartPoint(0.92, 0.32),
-        ChartPoint(1.00, 0.50),
-      ],
-      wifiStandard: 'Wi-Fi 7 (802.11be)',
-      wifiConnected: true,
-      wifiBand: 'Connected • 5 GHz Multi-Link',
-      downlinkMbps: 348.5,
-      linkPhyMbps: 1440,
-      latencyMs: 14,
-      jitterMs: 1,
-      gatewayIp: '192.168.1.142',
+    final device = results[0];
+    final cpu = results[1];
+    final memory = results[2];
+    final storage = results[3];
+    final battery = results[4];
+    final network = results[5];
+
+    final d = device as dynamic;
+    final c = cpu as dynamic;
+    final m = memory as dynamic;
+    final s = storage as dynamic;
+    final b = battery as dynamic;
+    final n = network as dynamic;
+
+    final ramTotal = _gb(m.totalBytes);
+    final ramFree = _gb(m.availableBytes);
+    final ramUsed = _gb(m.usedBytes);
+    final storageTotal = _gb(s.totalBytes);
+    final storageFree = _gb(s.freeBytes);
+    final storageUsed = _gb(s.usedBytes);
+
+    return DeviceHealth(
+      deviceId: _text(d.model),
+      deviceName: _text(d.deviceName),
+      osVersion: '${_text(d.osName)} ${_text(d.osVersion)}'.trim(),
+      chipset: _text(c.architecture),
+      buildNumber: _text(c.abi),
+      healthPercent: 0,
+      batteryPercent: _int(b.level),
+      batteryTempCelsius: 0,
+      chargeState: _chargeState(b.chargeState),
+      cellHealth: 'Unavailable',
+      chargerLabel: _text(b.powerSource),
+      ramPercent: _percent(m.usagePercent),
+      ramUsedGb: ramUsed,
+      ramTotalGb: ramTotal,
+      ramFreeGb: ramFree,
+      ramType: 'Unavailable',
+      activeHeapGb: 0,
+      zramSwapGb: 0,
+      storagePercent: _percent(s.usagePercent),
+      storageUsedGb: storageUsed.round(),
+      storageTotalGb: storageTotal.round(),
+      storageFreeGb: storageFree.round(),
+      storageBus: 'Unavailable',
+      cpuName: 'CPU (${_text(c.architecture)})',
+      cpuCoreLayout: '${_text(c.numberOfCores)} cores',
+      cpuLoadPercent: 0,
+      cpuFreqPrimeGhz: 0,
+      cpuFreqPerformanceGhz: 0,
+      cpuFreqEfficiencyGhz: 0,
+      cpuLoadHistory: const [],
+      wifiStandard: _text(n.connectionType),
+      wifiConnected: _bool(n.isConnected),
+      wifiBand: _text(n.connectionType),
+      downlinkMbps: 0,
+      linkPhyMbps: 0,
+      latencyMs: 0,
+      jitterMs: 0,
+      gatewayIp: 'Unavailable',
     );
+  }
+
+  String _text(dynamic sysValue) =>
+      sysValue != null && sysValue.isAvailable ? '${sysValue.value}' : 'Unavailable';
+
+  int _int(dynamic sysValue) =>
+      sysValue != null && sysValue.isAvailable ? (sysValue.value as int) : 0;
+
+  bool _bool(dynamic sysValue) =>
+      sysValue != null && sysValue.isAvailable ? sysValue.value as bool : false;
+
+  int _percent(dynamic sysValue) {
+    if (sysValue == null || !sysValue.isAvailable) return 0;
+    return ((sysValue.value as double) * 100).round();
+  }
+
+  double _gb(dynamic sysValue) {
+    if (sysValue == null || !sysValue.isAvailable) return 0;
+    return (sysValue.value as int) / (1024 * 1024 * 1024);
+  }
+
+  String _chargeState(dynamic sysValue) {
+    if (sysValue == null || !sysValue.isAvailable) return 'Unavailable';
+    final value = sysValue.value as ChargeState;
+    switch (value) {
+      case ChargeState.charging:
+        return 'Charging';
+      case ChargeState.discharging:
+        return 'Discharging';
+      case ChargeState.full:
+        return 'Full';
+      case ChargeState.unknown:
+        return 'Unavailable';
+    }
   }
 }
